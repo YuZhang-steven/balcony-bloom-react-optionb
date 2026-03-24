@@ -1,0 +1,189 @@
+/* ─────────────────────────────────────────────────────────────
+   Balcony Bloom — watercolour garden study
+
+   LAYOUT:
+     Title     ← top-left corner
+     Buttons   → top-right corner
+     Canvas    ■ wide landscape, fills the blue box
+
+   COLOUR: no black — everything green/purple/cream.
+   ───────────────────────────────────────────────────────────── */
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --paper-warm     : #ede3d0;
+  --paper-shadow   : #d9ccb2;
+
+  --text-deep      : #3d6856;   /* verdigris */
+  --text-body      : #7a8a78;   /* sage */
+  --text-muted     : #9da89a;
+  --accent-purple  : #8d7a92;   /* wisteria */
+  --accent-green   : #5a9474;
+  --border-wash    : rgba(141,122,146,0.30);
+}
+
+html, body, #__next {
+  width: 100%; height: 100%;
+  overflow: hidden;
+  font-family: 'Cormorant Garamond', 'Cormorant', Georgia, serif;
+  color: var(--text-body);
+  cursor: crosshair;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+body {
+  background:
+    radial-gradient(ellipse 140% 110% at 70% 18%, #f5ecd9 0%, transparent 55%),
+    radial-gradient(ellipse 120% 100% at 20% 85%, var(--paper-shadow) 0%, transparent 60%),
+    var(--paper-warm);
+}
+
+/* paper tooth */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  pointer-events: none;
+  z-index: 1000;
+  opacity: 0.28;
+  mix-blend-mode: multiply;
+  background-image:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='4' seed='7'/><feColorMatrix values='0 0 0 0 0.55 0 0 0 0 0.52 0 0 0 0 0.44 0 0 0 0.18 0'/></filter><rect width='220' height='220' filter='url(%23n)'/></svg>");
+}
+
+/* afternoon light */
+body::after {
+  content: '';
+  position: fixed; inset: 0;
+  pointer-events: none;
+  z-index: 999;
+  background: radial-gradient(ellipse 70% 55% at 72% 22%,
+    rgba(255,248,225,0.38) 0%, rgba(255,244,210,0.14) 40%, transparent 70%);
+  mix-blend-mode: soft-light;
+}
+
+/* ═══ TOP BAR — title left, controls right ═══ */
+
+#topbar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 20;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 1.1rem 1.6rem 0.6rem;
+  pointer-events: none;
+}
+#topbar > * { pointer-events: auto; }
+
+#masthead { pointer-events: none; }
+#masthead h1 {
+  font-style: italic;
+  font-weight: 500;
+  font-size: clamp(1.5rem, 2.6vw, 2.2rem);
+  line-height: 1;
+  letter-spacing: 0.03em;
+  color: var(--text-deep);
+  white-space: nowrap;
+}
+#masthead h1 .bloom {
+  display: inline;
+  margin-left: 0.3em;
+  font-weight: 400;
+  color: var(--accent-purple);
+}
+#masthead .sub {
+  margin-top: 0.25rem;
+  font-style: italic;
+  font-size: clamp(0.78rem, 1vw, 0.88rem);
+  color: var(--text-muted);
+}
+
+#controls {
+  display: flex;
+  gap: 1.4rem;
+  align-items: baseline;
+}
+#controls button {
+  font-family: inherit;
+  font-style: italic;
+  font-size: clamp(0.9rem, 1.1vw, 1.02rem);
+  letter-spacing: 0.03em;
+  background: none;
+  border: none;
+  color: var(--accent-purple);
+  padding: 0.4rem 0.6rem;
+  cursor: pointer;
+  border-bottom: 1.5px solid var(--border-wash);
+  transition: color 0.3s, border-color 0.3s;
+  white-space: nowrap;
+}
+#controls button:hover {
+  color: var(--accent-green);
+  border-bottom-color: var(--accent-green);
+}
+#count {
+  font-style: italic;
+  font-size: 0.82rem;
+  color: var(--accent-purple);
+  opacity: 0.55;
+}
+
+/* ═══ CANVAS — wide landscape, fills the room below the topbar ═══ */
+
+#stage {
+  position: fixed;
+  left: 50%;
+  top: calc(50% + 1.5rem);
+  transform: translate(-50%, -50%);
+  width: 96vw;
+  height: auto;
+  aspect-ratio: 1600 / 780;
+  max-height: calc(100vh - 5.5rem);
+  max-height: calc(100dvh - 5.5rem);
+}
+
+/* ═══ MOBILE — buttons drop to bottom, canvas scales with width ═══ */
+
+@media (max-width: 700px) {
+  #topbar {
+    padding: 0.7rem 1rem 0.4rem;
+  }
+
+  #controls {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    top: auto;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.8rem 0.9rem;
+    padding-bottom: max(0.9rem, env(safe-area-inset-bottom));
+    flex-wrap: wrap;
+  }
+  #controls button {
+    padding: 0.55rem 1.1rem;
+    min-height: 44px;
+  }
+  #count {
+    width: 100%;
+    text-align: center;
+    order: -1;
+    font-size: 0.78rem;
+  }
+
+  #masthead h1 { font-size: 1.35rem; }
+  #masthead .sub { display: none; }
+
+  #stage {
+    width: 100vw;
+    top: calc(50% - 0.5rem);
+    max-height: calc(100vh - 7rem);
+    max-height: calc(100dvh - 7rem);
+  }
+}
+
+@media (max-height: 520px) {
+  #masthead .sub { display: none; }
+  #stage { max-height: calc(100vh - 4.5rem); }
+}
