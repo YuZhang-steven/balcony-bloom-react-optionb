@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAnchors } from '../game/AnchorContext';
 
-interface DebugPanelProps {
+type DebugPanelProps = {
   scale: number;
   onScaleChange: (s: number) => void;
   showAnchors: boolean;

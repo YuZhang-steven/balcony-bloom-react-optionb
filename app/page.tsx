@@ -1,5 +1,6 @@
 'use client';
 import { useState, useCallback, useRef, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { AnchorProvider, useAnchors } from '../components/game/AnchorContext';
 import { generateScene, VIEW_W, VIEW_H, type Scene } from '../components/game/sceneGenerator';
 import { generatePlant, type PlantDesc } from '../components/plants/registry';
@@ -18,13 +19,14 @@ export default function Page() {
   );
 }
 
-interface PlantInstance {
+type PlantInstance = {
   id: number;
   layer: 'front' | 'back';
   elements: PlantDesc['elements'];
 }
 
 function Game() {
+  const router = useRouter();
   const [seed, setSeed] = useState(0);
   const [plants, setPlants] = useState<PlantInstance[]>([]);
   const [scale, setScale] = useState(1);
@@ -112,6 +114,7 @@ function Game() {
             {plants.length === 0 ? '' : plants.length === 1 ? '1 planting' : `${plants.length} plantings`}
           </span>
           <button onClick={clearGarden}>clear garden</button>
+          <button onClick={() => router.push('/motif-studio')}>motif studio</button>
           <button onClick={newBalcony}>new balcony</button>
         </div>
       </div>

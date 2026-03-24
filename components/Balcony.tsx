@@ -6,7 +6,7 @@ import { PorchSlab, InteriorWash, DoorAndWindow } from './architecture/PorchSlab
 import { useMemo } from 'react';
 import type { Scene } from '../types';
 
-interface BalconyBackProps {
+type BalconyBackProps = {
   scene: Scene;
 }
 
@@ -25,7 +25,7 @@ export function BalconyBack({ scene }: BalconyBackProps) {
   );
 }
 
-interface BalconyIronProps {
+type BalconyIronProps = {
   scene: Scene;
 }
 
@@ -72,7 +72,7 @@ export function BalconyIron({ scene }: BalconyIronProps) {
   );
 }
 
-interface RailingSegment {
+type RailingSegment = {
   x: number;
   w: number;
 }

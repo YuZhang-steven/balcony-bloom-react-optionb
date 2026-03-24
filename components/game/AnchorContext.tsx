@@ -3,7 +3,7 @@ import type { Anchor } from '../../types';
 
 type Listener = () => void;
 
-interface AnchorContextValue {
+type AnchorContextValue = {
   registerAnchor: (anchor: Anchor) => void;
   clearAnchors: () => void;
   nearest: (x: number, y: number, maxDist?: number) => Anchor | null;

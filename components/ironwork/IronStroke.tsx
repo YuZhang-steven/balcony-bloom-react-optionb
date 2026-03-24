@@ -18,7 +18,7 @@
 
 import { IRON } from '../game/palettes';
 
-interface IronStrokeProps {
+export type IronStrokeProps = {
   d: string;      // SVG path data (M/L/Q/C commands)
   w?: number;     // Core stroke width in px (default 3)
   color?: string; // Stroke color key from IRON palette (default IRON.mid)
@@ -54,7 +54,7 @@ export function IronStroke({ d, w = 3, color = IRON.mid }: IronStrokeProps) {
   );
 }
 
-interface IronFillProps {
+export type IronFillProps = {
   d: string;      // SVG path data
   color?: string; // Fill color (default IRON.mid)
 }
@@ -66,7 +66,7 @@ export function IronFill({ d, color = IRON.mid }: IronFillProps) {
   );
 }
 
-interface FinialProps {
+type FinialProps = {
   x: number; // Tip x coordinate
   y: number; // Tip y coordinate
 }
@@ -107,7 +107,7 @@ export function Finial({ x, y }: FinialProps) {
   );
 }
 
-interface RosetteProps {
+type RosetteProps = {
   x: number; // Center x
   y: number; // Center y
   r: number; // Outer radius

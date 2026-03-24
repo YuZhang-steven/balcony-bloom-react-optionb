@@ -1,6 +1,6 @@
 import { useEffect, useRef, memo, type ReactElement } from 'react';
 
-interface PlantElement {
+type PlantElement = {
   type: string;
   x: number;
   y: number;
@@ -17,13 +17,13 @@ interface PlantElement {
   anim: { kind: string; delay: number; dur: number };
 }
 
-interface PlantDesc {
+type PlantDesc = {
   id: number;
   layer: 'front' | 'back';
   elements: PlantElement[];
 }
 
-interface PlantLayerProps {
+type PlantLayerProps = {
   plants: PlantDesc[];
   layer: 'front' | 'back';
 }

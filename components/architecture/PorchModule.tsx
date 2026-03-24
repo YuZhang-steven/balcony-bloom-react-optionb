@@ -7,7 +7,7 @@ import { useRegisterAnchors } from '../game/AnchorContext';
 import { rand, irand, coin } from '../game/random';
 import type { Anchor } from '../../types';
 
-interface PorchModuleProps {
+type PorchModuleProps = {
   cx: number;
   topY: number;
   moduleW: number;
@@ -60,7 +60,7 @@ export function PorchModule({ cx, topY, moduleW, triH, triReach, hasKey }: Porch
   );
 }
 
-interface TriangleBracketProps {
+type TriangleBracketProps = {
   pilasterX: number;
   reach: number;
   h: number;

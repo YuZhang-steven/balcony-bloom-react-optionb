@@ -1,7 +1,7 @@
 import { STONE, SHADOW } from '../game/palettes';
 import type { Scene } from '../../types';
 
-interface PorchSlabProps {
+type PorchSlabProps = {
   scene: Scene;
 }
 
@@ -21,7 +21,7 @@ export function PorchSlab({ scene }: PorchSlabProps) {
   );
 }
 
-interface InteriorWashProps {
+type InteriorWashProps = {
   scene: Scene;
 }
 
@@ -49,7 +49,7 @@ export function InteriorWash({ scene }: InteriorWashProps) {
   );
 }
 
-interface DoorAndWindowProps {
+type DoorAndWindowProps = {
   scene: Scene;
 }
 

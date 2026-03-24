@@ -4,7 +4,7 @@ import { IRON, STONE } from '../game/palettes';
 import { useRegisterAnchors } from '../game/AnchorContext';
 import type { Scene, Anchor } from '../../types';
 
-interface StaircaseProps {
+type StaircaseProps = {
   scene: Scene;
 }
 
@@ -85,7 +85,7 @@ export function Staircase({ scene }: StaircaseProps) {
   );
 }
 
-interface StairRailingProps {
+type StairRailingProps = {
   points: { x: number; y: number }[];
   side: 'left' | 'right';
   railH: number;
@@ -139,7 +139,7 @@ function StairRailing({ points, side, railH }: StairRailingProps) {
   );
 }
 
-interface DrumNewelProps {
+type DrumNewelProps = {
   x: number;
   y: number;
   h: number;

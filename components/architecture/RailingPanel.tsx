@@ -5,7 +5,7 @@ import { IRON } from '../game/palettes';
 import { useRegisterAnchors } from '../game/AnchorContext';
 import type { Anchor } from '../../types';
 
-interface RailingPanelProps {
+type RailingPanelProps = {
   x: number;
   y: number;
   w: number;

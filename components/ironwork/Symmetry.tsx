@@ -1,6 +1,8 @@
+export type SymmetryMode = 'none' | 'MirrorH' | 'MirrorV' | 'Mirror4' | 'Rotate2';
+
 import type { ReactNode } from 'react';
 
-interface MirrorHProps {
+type MirrorHProps = {
   children: ReactNode;
 }
 
@@ -13,7 +15,7 @@ export function MirrorH({ children }: MirrorHProps) {
   );
 }
 
-interface MirrorVProps {
+type MirrorVProps = {
   children: ReactNode;
 }
 
@@ -26,7 +28,7 @@ export function MirrorV({ children }: MirrorVProps) {
   );
 }
 
-interface Mirror4Props {
+type Mirror4Props = {
   children: ReactNode;
 }
 
@@ -41,7 +43,7 @@ export function Mirror4({ children }: Mirror4Props) {
   );
 }
 
-interface Rotate2Props {
+type Rotate2Props = {
   children: ReactNode;
 }
 
@@ -56,7 +58,7 @@ export function Rotate2({ children }: Rotate2Props) {
 
 import { useId } from 'react';
 
-interface TileRowProps {
+type TileRowProps = {
   x: number;
   y: number;
   w: number;

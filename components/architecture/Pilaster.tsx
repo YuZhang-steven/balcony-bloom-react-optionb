@@ -26,7 +26,7 @@ export function pickPilasterSequence(): string[] {
   return irand(0, 2) === 0 ? [a, b] : [a, b, pick(MOTIF_KEYS)];
 }
 
-interface PilasterProps {
+type PilasterProps = {
   x: number;           // Center x coordinate of the pilaster
   topY: number;        // y coordinate at the top of the pilaster
   bottomY: number;     // y coordinate at the bottom of the pilaster
