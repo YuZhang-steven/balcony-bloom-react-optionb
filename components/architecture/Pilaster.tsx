@@ -2,17 +2,17 @@ import { IronStroke } from '../ironwork/IronStroke';
 import { Quatrefoil, Fleur, Heart, SOrnament, Knot, Pendant } from '../ironwork/motifs';
 import { IRON } from '../game/palettes';
 import { useRegisterAnchors } from '../game/AnchorContext';
-import { pick, irand, rand } from '../game/random';
+import { pick, irand } from '../game/random';
 import type { Anchor } from '../../types';
 
 const CELL_H = 54;
 
 const MOTIF_LIB: Record<string, (s: number) => React.ReactNode> = {
   quatrefoil: (s) => <Quatrefoil s={s} />,
-  fleur:      (s) => <Fleur s={s} />,
-  heart:      (s) => <Heart s={s * 0.85} />,
-  sornament:  (s) => <SOrnament s={s * 0.9} />,
-  knot:       (s) => <Knot s={s * 0.8} />,
+  fleur: (s) => <Fleur s={s} />,
+  heart: (s) => <Heart s={s * 0.85} />,
+  sornament: (s) => <SOrnament s={s * 0.9} />,
+  knot: (s) => <Knot s={s * 0.8} />,
 };
 const MOTIF_KEYS = Object.keys(MOTIF_LIB);
 
@@ -41,8 +41,10 @@ export function Pilaster({ x, topY, bottomY, w = 38, sequence }: PilasterProps) 
 
   const anchors: Anchor[] = [];
   for (let t = 0.25; t < 0.9; t += 0.3) {
-    anchors.push({ x: cx, y: topY + h * t, kind: 'column',
-                   meta: { col: cx, top: topY, bottom: bottomY } });
+    anchors.push({
+      x: cx, y: topY + h * t, kind: 'column',
+      meta: { col: cx, top: topY, bottom: bottomY }
+    });
   }
   useRegisterAnchors(anchors);
 

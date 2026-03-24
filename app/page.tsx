@@ -5,6 +5,8 @@ import { generateScene, VIEW_W, VIEW_H, type Scene } from '../components/game/sc
 import { generatePlant, type PlantDesc } from '../components/plants/registry';
 import { BalconyBack, BalconyIron } from '../components/Balcony';
 import { PlantLayer } from '../components/plants/PlantLayer';
+import { DebugPanel } from '../components/debug/DebugPanel';
+import { DebugAnchors } from '../components/debug/DebugAnchors';
 import { IRON } from '../components/game/palettes';
 import './globals.css';
 
@@ -25,6 +27,8 @@ interface PlantInstance {
 function Game() {
   const [seed, setSeed] = useState(0);
   const [plants, setPlants] = useState<PlantInstance[]>([]);
+  const [scale, setScale] = useState(1);
+  const [showAnchors, setShowAnchors] = useState(false);
   const { clearAnchors, nearest } = useAnchors();
 
   useEffect(() => {
@@ -71,20 +75,32 @@ function Game() {
     setPlants(p => [...p, { id: Date.now() + Math.random(), ...desc }]);
   }, [nearest]);
 
+
   return (
     <>
       <svg ref={svgRef} id="stage"
         viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
         preserveAspectRatio="xMidYMid meet"
+        style={{ cursor: 'zoom-in' }}
         onClick={handleClick}>
         <Filters />
-        <g key={seed}>
-          <BalconyBack scene={sceneRef.current} />
-          <PlantLayer plants={plants} layer="back" />
-          <BalconyIron scene={sceneRef.current} />
-          <PlantLayer plants={plants} layer="front" />
+        <g transform={`scale(${scale})`} transformOrigin={`${VIEW_W / 2}px ${VIEW_H / 2}px`}>
+          <g key={seed}>
+            <BalconyBack scene={sceneRef.current} />
+            <PlantLayer plants={plants} layer="back" />
+            <BalconyIron scene={sceneRef.current} />
+            <PlantLayer plants={plants} layer="front" />
+          </g>
+          <DebugAnchors enabled={showAnchors} />
         </g>
       </svg>
+
+      <DebugPanel
+        scale={scale}
+        onScaleChange={setScale}
+        showAnchors={showAnchors}
+        onShowAnchorsChange={setShowAnchors}
+      />
 
       <div id="topbar">
         <header id="masthead">
