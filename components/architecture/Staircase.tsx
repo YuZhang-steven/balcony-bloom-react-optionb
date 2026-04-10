@@ -1,4 +1,5 @@
-import { IronStroke, IronFill, Finial } from '../ironwork/IronStroke';
+import { IronStroke, IronFill } from '../ironwork/IronStroke';
+import { Finial } from '../ironwork/ornaments';
 import { cScroll, twistBar } from '../ironwork/primitives';
 import { IRON, STONE } from '../game/palettes';
 import { useRegisterAnchors } from '../game/AnchorContext';
