@@ -111,7 +111,7 @@ export function MotifCodeEditor({ config, s, onConfigChange }: MotifCodeEditorPr
           spellCheck={false}
           aria-label="Generated motif code"
         />
-        <div className="ms-hint" style={{ padding: '0.4rem 1rem', color: '#3a2a18', fontSize: '0.6rem', fontStyle: 'italic', borderTop: '1px solid #16120e' }}>
+        <div className="ms-hint" style={{ padding: '0.4rem 1rem', borderTop: '1px solid var(--border-wash)' }}>
           Edit path coords directly — preview updates live.
         </div>
       </div>

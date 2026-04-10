@@ -27,19 +27,19 @@ type MotifControlsProps = {
 };
 
 const SYMMETRY_OPTIONS: { value: SymmetryMode; label: string }[] = [
-  { value: 'none',    label: 'None' },
+  { value: 'none', label: 'None' },
   { value: 'MirrorH', label: 'Mirror H' },
   { value: 'MirrorV', label: 'Mirror V' },
   { value: 'Mirror4', label: 'Mirror 4x' },
-  { value: 'Rotate2',  label: 'Rotate 180' },
+  { value: 'Rotate2', label: 'Rotate 180' },
 ];
 
 const COLOR_OPTIONS = [
   { value: IRON.bright, label: 'Bright' },
-  { value: IRON.mid,    label: 'Mid' },
-  { value: IRON.deep,   label: 'Deep' },
-  { value: '#c8a96e',   label: 'Gold accent' },
-  { value: '#8b7355',   label: 'Bronze' },
+  { value: IRON.mid, label: 'Mid' },
+  { value: IRON.deep, label: 'Deep' },
+  { value: '#c8a96e', label: 'Gold accent' },
+  { value: '#8b7355', label: 'Bronze' },
 ];
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
@@ -69,7 +69,9 @@ export function MotifControls({ config, s, onSChange, onChange, onReset, onDupli
         />
       </Field>
 
-      <Field label="Path d">
+      {/* Path d — dedicated section, not constrained by ms-field-body flex */}
+      <div className="ms-path-section">
+        <label className="ms-path-label">Path d</label>
         <textarea
           className="ms-textarea"
           value={config.path}
@@ -79,7 +81,7 @@ export function MotifControls({ config, s, onSChange, onChange, onReset, onDupli
           placeholder="M 0 0 Q ..."
         />
         <div className="ms-hint">Use ${`{s * ...}`} for size-relative coords. M/L/Q/C/Z commands.</div>
-      </Field>
+      </div>
 
       <Field label={`Stroke Width (w = ${config.w})`}>
         <input
@@ -99,7 +101,7 @@ export function MotifControls({ config, s, onSChange, onChange, onReset, onDupli
           type="range"
           className="ms-range ms-range-full"
           min={10}
-          max={300}
+          max={3000}
           value={s}
           onChange={e => onSChange(parseInt(e.target.value))}
         />

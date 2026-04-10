@@ -46,19 +46,19 @@ function GridLines() {
   for (let x = 100; x < VIEW_W; x += 100) {
     lines.push(
       <line key={`v${x}`} x1={x} y1={0} x2={x} y2={VIEW_H}
-        stroke="#3a3530" strokeWidth={0.5} strokeDasharray="4 6" />
+        stroke="rgba(141,122,146,0.18)" strokeWidth={0.5} strokeDasharray="4 6" />
     );
   }
   for (let y = 100; y < VIEW_H; y += 100) {
     lines.push(
       <line key={`h${y}`} x1={0} y1={y} x2={VIEW_W} y2={y}
-        stroke="#3a3530" strokeWidth={0.5} strokeDasharray="4 6" />
+        stroke="rgba(141,122,146,0.18)" strokeWidth={0.5} strokeDasharray="4 6" />
     );
   }
   // Center crosshairs — slightly brighter
   lines.push(
-    <line key="cx" x1={CX} y1={0} x2={CX} y2={VIEW_H} stroke="#6a5a4a" strokeWidth={0.8} />,
-    <line key="cy" x1={0} y1={CY} x2={VIEW_W} y2={CY} stroke="#6a5a4a" strokeWidth={0.8} />
+    <line key="cx" x1={CX} y1={0} x2={CX} y2={VIEW_H} stroke="rgba(141,122,146,0.35)" strokeWidth={0.8} />,
+    <line key="cy" x1={0} y1={CY} x2={VIEW_W} y2={CY} stroke="rgba(141,122,146,0.35)" strokeWidth={0.8} />
   );
   return <>{lines}</>;
 }
@@ -97,7 +97,7 @@ export function MotifPreview({ config, s, showGrid, evalPath }: MotifPreviewProp
         aria-label="Motif preview"
       >
         {/* Parchment background */}
-        <rect width={VIEW_W} height={VIEW_H} fill="#1e1b17" />
+        <rect width={VIEW_W} height={VIEW_H} fill="var(--paper-warm)" />
 
         {/* SVG Filters */}
         <defs>
@@ -128,7 +128,7 @@ export function MotifPreview({ config, s, showGrid, evalPath }: MotifPreviewProp
           x={VIEW_W - 16}
           y={VIEW_H - 14}
           textAnchor="end"
-          fill="#7a6a5a"
+          fill="var(--text-muted)"
           fontSize={11}
           fontFamily="monospace"
         >
