@@ -12,12 +12,12 @@ A balcony is built from repeating **porch modules** that share pilasters:
            Side+Triangle+Top        (N modules, N+1 pilasters)
 ```
 
-One module (`architecture/PorchModule.jsx`) contains:
+One module (`architecture/PorchModule.tsx`) contains:
 - **Top frieze** — Greek-key or scroll band
 - **Triangle bracket pair** — drawn as ONE half, mirrored about the module
   centre. Reach is < half-width so the two triangles don't always touch.
 
-Pilasters (`architecture/Pilaster.jsx`) flank modules — tall strips of
+Pilasters (`architecture/Pilaster.tsx`) flank modules — tall strips of
 stacked symmetric motifs. One pilaster is shared between adjacent modules.
 
 Modules can have different widths. The scene generator picks 2-4 modules
@@ -25,7 +25,7 @@ and distributes the balcony width among them.
 
 ## Symmetry — the Grammar of Cast Iron
 
-`ironwork/Symmetry.jsx` provides the reflection wrappers:
+`ironwork/Symmetry.tsx` provides the reflection wrappers:
 
 | Wrapper | Operation | Example |
 |---|---|---|
@@ -35,7 +35,7 @@ and distributes the balcony width among them.
 | `<Rotate2>` | 180° point symmetry | S-scroll |
 | `<TileRow>` | repeat tile to fill width, no squish | Railing panels |
 
-`ironwork/motifs.jsx` draws **only the unique half or quarter** of each
+`ironwork/motifs.tsx` draws **only the unique half or quarter** of each
 motif. The wrappers complete them. To add a new ornament: write one curve,
 pick the right wrapper.
 
@@ -45,42 +45,65 @@ Railing patterns are defined as **half-tiles** in a normalised 100-unit-tall
 space. `<TileRow>` mirrors them, counts how many fit the span, and spaces
 them evenly. The motif never squishes — only the tile COUNT changes.
 
-## Component Tree
-
 ```
-src/
-├── ironwork/
-│   ├── Symmetry.jsx      ← MirrorH, Mirror4, Rotate2, TileRow
-│   ├── motifs.jsx        ← Quatrefoil, Fleur, Heart, SOrnament, Knot
-│   ├── primitives.js     ← cScroll, greekKey, acanthus, bladeLeaf
-│   └── IronStroke.jsx    ← double-stroke (outline + verdigris)
+src/                         (source root)
+├── types/
+│   └── index.ts              ← shared TypeScript types
 │
 ├── components/
-│   ├── Balcony.jsx           ← module composer
-│   └── architecture/
-│       ├── PorchModule.jsx   ← one bay: frieze + mirrored brackets
-│       ├── Pilaster.jsx      ← vertical divider: stacked motifs
-│       ├── RailingPanel.jsx  ← half-tile + TileRow
-│       ├── Staircase.jsx     ← frontal steps + drum newels
-│       └── PorchSlab.jsx     ← floor, wash, door
+│   ├── Balcony.tsx           ← module composer + scene assembly
+│   ├── architecture/
+│   │   ├── PorchModule.tsx   ← one bay: frieze + mirrored brackets
+│   │   ├── Pilaster.tsx      ← vertical divider: stacked motifs
+│   │   ├── RailingPanel.tsx  ← half-tile + TileRow
+│   │   ├── Staircase.tsx     ← frontal steps + drum newels
+│   │   └── PorchSlab.tsx     ← floor, wash, door
+│   ├── ironwork/
+│   │   ├── Symmetry.tsx      ← MirrorH, Mirror4, Rotate2, TileRow
+│   │   ├── motifs.tsx        ← Quatrefoil, Fleur, Heart, SOrnament, Knot
+│   │   ├── primitives.ts     ← cScroll, greekKey, acanthus, bladeLeaf
+│   │   └── IronStroke.tsx    ← double-stroke (outline + verdigris)
+│   ├── game/
+│   │   ├── sceneGenerator.ts ← rolls N modules, pilaster positions
+│   │   ├── AnchorContext.tsx  ← components register click-points
+│   │   ├── palettes.ts
+│   │   └── random.ts
+│   ├── plants/
+│   │   ├── PlantLayer.tsx    ← renders all plant layers
+│   │   ├── generators.ts     ← procedural plant generators
+│   │   ├── registry.ts       ← plant type registry
+│   │   └── shapes.ts        ← shared plant path helpers
+│   ├── debug/
+│   │   ├── DebugAnchors.tsx  ← click-point overlay
+│   │   └── DebugPanel.tsx    ← dev controls panel
+│   └── motif-studio/
+│       ├── MotifStudio.tsx   ← interactive motif editor shell
+│       ├── MotifCodeEditor.tsx
+│       ├── MotifControls.tsx
+│       ├── MotifPreview.tsx
+│       ├── motifRegistry.ts
+│       └── motifTypes.ts
 │
-├── game/
-│   ├── sceneGenerator.js     ← rolls N modules, pilaster positions
-│   ├── AnchorContext.jsx     ← components register click-points
-│   └── palettes.js / random.js
-│
-└── components/plants/        ← railTwine, wisteria, rooftopGarden…
+└── app/                      ← Next.js App Router
+    ├── layout.tsx
+    ├── page.tsx              ← main scene page
+    ├── globals.css
+    └── motif-studio/
+        └── page.tsx          ← /motif-studio route
 ```
 
 ## Adding Content
 
-**New motif** → write one curve in `motifs.jsx`, wrap it in a symmetry
-component. Add its key to `MOTIF_LIB` in `Pilaster.jsx` to stack it.
+**New motif** → write one curve in `motifs.tsx`, wrap it in a symmetry
+component. Add its key to `MOTIF_LIB` in `Pilaster.tsx` to stack it.
 
-**New railing tile** → write a half-tile in `RailingPanel.jsx`, export
+**New railing tile** → write a half-tile in `RailingPanel.tsx`, export
 `{tileW, render}`, push to `TILES`.
 
-**New module count/width** → adjust `nModules` range in `sceneGenerator.js`.
+**New module count/width** → adjust `nModules` range in `sceneGenerator.ts`.
 
-**New plant** → generator in `plants/generators.js`, register in
-`plants/registry.js`.
+**New plant** → generator in `plants/generators.ts`, register in
+`plants/registry.ts`.
+
+**New motif-studio preset** → define a preset in `motifRegistry.ts` and
+add its type to `motifTypes.ts`.
