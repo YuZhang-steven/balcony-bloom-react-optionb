@@ -5,8 +5,8 @@
  * Four-column layout:
  *   [Controls] | [Code Editor] | [Motif Preview] | [Strokes List]
  *
- * The code and preview panels are equal width (1fr 1fr) — the core
- * of the studio for understanding how code changes affect the motif look.
+ * All motif geometry flows through IronStrokeModel via NormalizedSpline data.
+ * No raw SVG path strings — no evalPath — no string templating.
  */
 
 import { useState, useEffect, useCallback } from 'react';
@@ -22,19 +22,11 @@ const DEFAULT_S = 80;
 export function MotifStudio() {
   const router = useRouter();
 
-  // All available strokes (built-in + user-defined)
   const [strokes, setStrokes] = useState<StrokeConfig[]>(BUILT_IN_STROKES);
-
-  // The currently active stroke being edited
   const [active, setActive] = useState<StrokeConfig>(BUILT_IN_STROKES[0]);
-
-  // Preview size parameter
   const [s, setS] = useState(DEFAULT_S);
-
-  // Show alignment grid on the preview
   const [showGrid, setShowGrid] = useState(true);
 
-  // Load strokes from localStorage on mount
   useEffect(() => {
     setStrokes(loadStrokes());
   }, []);
@@ -45,12 +37,9 @@ export function MotifStudio() {
   }, []);
 
   const handleActiveChange = useCallback((next: StrokeConfig | Partial<StrokeConfig>) => {
-    const merged = { ...active, ...next };
+    const merged = { ...active, ...next } as StrokeConfig;
     setActive(merged);
-    // Update in the strokes list
-    setStrokes(prev =>
-      prev.map(s => s.name === merged.name ? merged : s)
-    );
+    setStrokes(prev => prev.map(s => s.name === merged.name ? merged : s));
   }, [active]);
 
   const handleSave = useCallback(() => {
@@ -61,19 +50,11 @@ export function MotifStudio() {
   const handleDelete = useCallback((name: string) => {
     deleteStroke(name);
     setStrokes(loadStrokes());
-    // If we deleted the active one, select the first built-in
-    if (active.name === name) {
-      setActive(BUILT_IN_STROKES[0]);
-    }
+    if (active.name === name) setActive(BUILT_IN_STROKES[0]);
   }, [active.name]);
 
   const handleDuplicate = useCallback(() => {
-    const newName = `${active.name}_copy`;
-    const clone: StrokeConfig = {
-      ...active,
-      name: newName,
-      builtIn: false,
-    };
+    const clone: StrokeConfig = { ...active, name: `${active.name}_copy`, builtIn: false };
     saveStroke(clone);
     setStrokes(loadStrokes());
     setActive(clone);
@@ -87,26 +68,11 @@ export function MotifStudio() {
     }
   }, [active.name, handleActiveChange]);
 
-  // Evaluate the template-string path with the current s value.
-  // Paths in BUILT_IN_STROKES are stored as JS template-literal strings
-  // with ${s * ...} tokens. We use new Function so those tokens get
-  // evaluated with the current s value to produce the final SVG d string.
-  const evalPath = useCallback((path: string): string => {
-    try {
-      // eslint-disable-next-line no-new-func
-      const fn = new Function('s', `return \`${path}\`;`);
-      return fn(s);
-    } catch {
-      return path;
-    }
-  }, [s]);
-
   const builtIns = strokes.filter(s => s.builtIn);
   const userDefs = strokes.filter(s => !s.builtIn);
 
   return (
     <div className="ms-root">
-      {/* Top bar */}
       <header className="ms-topbar">
         <button className="ms-back-btn" onClick={() => router.push('/')}>
           Back to Garden
@@ -125,15 +91,11 @@ export function MotifStudio() {
               <rect x="9" y="9" width="5" height="5" rx="1" />
             </svg>
           </button>
-          <button className="ms-save-btn" onClick={handleSave}>
-            Save
-          </button>
+          <button className="ms-save-btn" onClick={handleSave}>Save</button>
         </div>
       </header>
 
-      {/* Four-column body */}
       <div className="ms-body">
-        {/* Col 1: Controls */}
         <aside className="ms-controls-col">
           <MotifControls
             config={active}
@@ -143,8 +105,6 @@ export function MotifStudio() {
             onReset={handleReset}
             onDuplicate={handleDuplicate}
           />
-
-          {/* Size presets — lives here because it's the primary interaction */}
           <div className="ms-size-panel">
             <div className="ms-panel-header">Size Presets</div>
             <div className="ms-size-presets">
@@ -161,33 +121,20 @@ export function MotifStudio() {
           </div>
         </aside>
 
-        {/* Col 2: Code Editor */}
         <section className="ms-code-col">
-          <MotifCodeEditor
-            config={active}
-            s={s}
-            onConfigChange={handleActiveChange}
-          />
+          <MotifCodeEditor config={active} s={s} onConfigChange={handleActiveChange} />
         </section>
 
-        {/* Col 3: Motif Preview */}
         <section className="ms-preview-col">
           <div className="ms-panel-header">
             Preview
             <span className="ms-panel-header-note">centered in 1600 x 780 viewBox</span>
           </div>
-          <MotifPreview
-            config={active}
-            s={s}
-            showGrid={showGrid}
-            evalPath={evalPath}
-          />
+          <MotifPreview config={active} s={s} showGrid={showGrid} />
         </section>
 
-        {/* Col 4: Strokes List */}
         <aside className="ms-strokes-col">
           <div className="ms-panel-header">Strokes</div>
-
           <div className="ms-strokes-group-label">Built-in</div>
           <ul className="ms-strokes-list">
             {builtIns.map(stroke => (
@@ -201,7 +148,6 @@ export function MotifStudio() {
               </li>
             ))}
           </ul>
-
           {userDefs.length > 0 && (
             <>
               <div className="ms-strokes-group-label">Custom</div>
@@ -214,11 +160,7 @@ export function MotifStudio() {
                     >
                       {stroke.name}
                     </button>
-                    <button
-                      className="ms-del-btn"
-                      onClick={() => handleDelete(stroke.name)}
-                      title="Delete"
-                    >
+                    <button className="ms-del-btn" onClick={() => handleDelete(stroke.name)} title="Delete">
                       x
                     </button>
                   </li>

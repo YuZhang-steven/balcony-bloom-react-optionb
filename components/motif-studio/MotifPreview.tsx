@@ -3,20 +3,15 @@
  * MotifPreview.tsx — live SVG canvas for the Motif Studio
  *
  * Renders the currently configured StrokeConfig as a live SVG motif,
- * centered in a 1600x780 viewBox (same as the main game canvas).
- * Supports optional alignment grid overlay and fill/stroke mode toggle.
+ * centered in a 1600x780 viewBox. Uses fromNormalized() to build an
+ * IronStrokeModel from the config's NormalizedSpline at the current `s`.
  */
 
 import { IronStroke, IronFill } from '../ironwork/IronStroke';
-import { svgPath } from '../ironwork/strokeBuilder';
+import { fromNormalized } from '../ironwork/strokeBuilder';
 import { MirrorH, Mirror4, MirrorV, Rotate2 } from '../ironwork/Symmetry';
 import { IRON } from '../game/palettes';
 import type { StrokeConfig, SymmetryMode } from './motifTypes';
-
-// NOTE: svgPath is used here as a bridge for the Motif Studio's user-editable
-// path strings (StrokeConfig.path). The studio allows users to author raw SVG
-// path data interactively, so string→model conversion is required at this layer.
-// All other ironwork code uses structured builders (line, spline, polyline, etc.).
 
 const VIEW_W = 1600;
 const VIEW_H = 780;
@@ -27,23 +22,15 @@ type MotifPreviewProps = {
   config: StrokeConfig;
   s: number;
   showGrid: boolean;
-  /** Evaluate the template-string path with the current s value */
-  evalPath: (path: string) => string;
 };
 
-function SymmetryWrapper({
-  mode,
-  children,
-}: {
-  mode: SymmetryMode;
-  children: React.ReactNode;
-}) {
+function SymmetryWrapper({ mode, children }: { mode: SymmetryMode; children: React.ReactNode }) {
   switch (mode) {
-    case 'MirrorH': return <><MirrorH>{children}</MirrorH></>;
-    case 'MirrorV': return <><MirrorV>{children}</MirrorV></>;
-    case 'Mirror4': return <><Mirror4>{children}</Mirror4></>;
-    case 'Rotate2': return <><Rotate2>{children}</Rotate2></>;
-    default: return <>{children}</>;
+    case 'MirrorH':  return <MirrorH>{children}</MirrorH>;
+    case 'MirrorV':  return <MirrorV>{children}</MirrorV>;
+    case 'Mirror4':  return <Mirror4>{children}</Mirror4>;
+    case 'Rotate2':  return <Rotate2>{children}</Rotate2>;
+    default:         return <>{children}</>;
   }
 }
 
@@ -68,25 +55,22 @@ function GridLines() {
   return <>{lines}</>;
 }
 
-export function MotifPreview({ config, s, showGrid, evalPath }: MotifPreviewProps) {
-  const { path, w, color, symmetry, mode, extras } = config;
-  const d = evalPath(path);
+export function MotifPreview({ config, s, showGrid }: MotifPreviewProps) {
+  const { spline, w, color, symmetry, mode, extras } = config;
+  const model = fromNormalized(spline, s, { w, color });
 
-  let extraEls: React.ReactNode = null;
-  if (extras && typeof extras === 'function') {
-    const extra = extras({ s });
-    if (extra && extra.path) {
-      extraEls = (
-        <SymmetryWrapper mode={symmetry}>
-          <IronStroke
-            stroke={svgPath(evalPath(extra.path), { w: extra.w ?? w, color: extra.color ?? IRON.bright })}
-          />
-        </SymmetryWrapper>
-      );
-    }
+  let extrasEl: React.ReactNode = null;
+  if (extras) {
+    const extrasModel = fromNormalized(extras.spline, s, {
+      w: extras.w ?? w,
+      color: extras.color ?? IRON.bright,
+    });
+    extrasEl = (
+      <SymmetryWrapper mode={symmetry}>
+        <IronStroke stroke={extrasModel} />
+      </SymmetryWrapper>
+    );
   }
-
-  const isPendant = config.name === 'Pendant';
 
   return (
     <div className="ms-preview-wrap">
@@ -109,13 +93,12 @@ export function MotifPreview({ config, s, showGrid, evalPath }: MotifPreviewProp
         <g transform={`translate(${CX} ${CY})`} filter="url(#ms-wobble)">
           <SymmetryWrapper mode={symmetry}>
             {mode === 'fill' ? (
-              <IronFill d={d} color={color} />
+              <circle cx={0} cy={0} r={s * 0.4} fill={color} opacity={0.6} />
             ) : (
-              <IronStroke stroke={svgPath(d, { w, color })} />
+              <IronStroke stroke={model} />
             )}
           </SymmetryWrapper>
-
-          {extraEls}
+          {extrasEl}
         </g>
 
         <text

@@ -1,22 +1,24 @@
 /**
- * motifRegistry.ts — built-in stroke definitions + localStorage CRUD
+ * motifRegistry.ts — built-in stroke definitions + localStorage CRUD + code gen
  *
- * Built-in motifs are defined as StrokeConfig objects so the Motif Studio
- * can render them, allow users to clone them, and generate copy-ready code.
+ * Built-in motifs store geometry as NormalizedSpline (coordinates as fractions of `s`).
+ * No raw SVG path strings — all geometry flows through the IronStrokeModel pipeline.
  */
 
-import type { StrokeConfig, MotifKind, MotifExtras } from './motifTypes';
+import type { StrokeConfig, NormalizedSpline, NormalizedStep } from './motifTypes';
 
-// ---------------------------------------------------------------------------
-// Built-in motifs — must match the path data from ../ironwork/motifs.tsx
-// ---------------------------------------------------------------------------
+// ─── Built-in motifs ─────────────────────────────────────────────────────────
 
 export const BUILT_IN_STROKES: StrokeConfig[] = [
   {
     name: 'Quatrefoil',
-    path: `M 0 \${-s * 0.15}
-  Q \${s * 0.15} \${-s * 0.7} \${s * 0.55} \${-s * 0.55}
-  Q \${s * 0.7} \${-s * 0.15} \${s * 0.15} 0`,
+    spline: {
+      start: [0, -0.15],
+      steps: [
+        { to: [0.55, -0.55], q: [0.15, -0.7] },
+        { to: [0.15, 0],     q: [0.7,  -0.15] },
+      ],
+    },
     w: 2.6,
     color: '#3d8466',
     symmetry: 'Mirror4',
@@ -25,31 +27,42 @@ export const BUILT_IN_STROKES: StrokeConfig[] = [
   },
   {
     name: 'Fleur',
-    path: `M 0 \${-s * 0.95}
-  Q \${s * 0.18} \${-s * 0.65} \${s * 0.08} \${-s * 0.35}
-  Q 0 \${-s * 0.12} 0 0`,
+    spline: {
+      start: [0, -0.95],
+      steps: [
+        { to: [0.08, -0.35], q: [0.18, -0.65] },
+        { to: [0, 0],        q: [0, -0.12] },
+      ],
+    },
     w: 2.5,
     color: '#3d8466',
     symmetry: 'MirrorH',
     mode: 'stroke',
     builtIn: true,
-    // Second path for the spiral accent — handled via extras
-    extras: ({ s }: { s: number }): MotifExtras => ({
-      path: `M 0 \${s * 0.05}
-  Q \${s * 0.45} \${s * 0.08} \${s * 0.52} \${s * 0.42}
-  Q \${s * 0.56} \${s * 0.72} \${s * 0.32} \${s * 0.78}
-  Q \${s * 0.14} \${s * 0.8} \${s * 0.15} \${s * 0.62}
-  Q \${s * 0.18} \${s * 0.48} \${s * 0.3} \${s * 0.5}`,
+    extras: {
+      spline: {
+        start: [0, 0.05],
+        steps: [
+          { to: [0.52, 0.42], q: [0.45, 0.08] },
+          { to: [0.32, 0.78], q: [0.56, 0.72] },
+          { to: [0.15, 0.62], q: [0.14, 0.8] },
+          { to: [0.3,  0.5],  q: [0.18, 0.48] },
+        ],
+      },
       w: 2.25,
       color: '#4a9070',
-    }),
+    },
   },
   {
     name: 'Heart',
-    path: `M 0 \${s}
-  Q \${s * 0.9} \${s * 0.3} \${s * 0.7} \${-s * 0.3}
-  Q \${s * 0.5} \${-s * 0.85} \${s * 0.05} \${-s * 0.55}
-  Q \${-s * 0.22} \${-s * 0.32} 0 \${-s * 0.05}`,
+    spline: {
+      start: [0, 1],
+      steps: [
+        { to: [0.7,  -0.3],  q: [0.9,  0.3] },
+        { to: [0.05, -0.55], q: [0.5, -0.85] },
+        { to: [0, -0.05],    q: [-0.22, -0.32] },
+      ],
+    },
     w: 2.6,
     color: '#3d8466',
     symmetry: 'MirrorH',
@@ -58,11 +71,15 @@ export const BUILT_IN_STROKES: StrokeConfig[] = [
   },
   {
     name: 'SOrnament',
-    path: `M \${-s * 0.05} \${s * 0.15}
-  Q \${s * 0.35} \${-s * 0.1} \${s * 0.45} \${-s * 0.5}
-  Q \${s * 0.52} \${-s * 0.85} \${s * 0.22} \${-s * 0.92}
-  Q \${-s * 0.02} \${-s * 0.95} \${-s * 0.06} \${-s * 0.72}
-  Q \${-s * 0.08} \${-s * 0.55} \${s * 0.1} \${-s * 0.55}`,
+    spline: {
+      start: [-0.05, 0.15],
+      steps: [
+        { to: [0.45, -0.5],   q: [0.35, -0.1] },
+        { to: [0.22, -0.92],  q: [0.52, -0.85] },
+        { to: [-0.06, -0.72], q: [-0.02, -0.95] },
+        { to: [0.1,  -0.55],  q: [-0.08, -0.55] },
+      ],
+    },
     w: 2.8,
     color: '#3d8466',
     symmetry: 'Rotate2',
@@ -71,10 +88,14 @@ export const BUILT_IN_STROKES: StrokeConfig[] = [
   },
   {
     name: 'Knot',
-    path: `M 0 0
-  Q \${s * 0.12} \${-s * 0.35} \${s * 0.45} \${-s * 0.45}
-  Q \${s * 0.78} \${-s * 0.52} \${s * 0.65} \${-s * 0.2}
-  Q \${s * 0.52} \${s * 0.05} \${s * 0.2} 0`,
+    spline: {
+      start: [0, 0],
+      steps: [
+        { to: [0.45, -0.45], q: [0.12, -0.35] },
+        { to: [0.65, -0.2],  q: [0.78, -0.52] },
+        { to: [0.2, 0],      q: [0.52,  0.05] },
+      ],
+    },
     w: 2.4,
     color: '#4a9070',
     symmetry: 'Mirror4',
@@ -83,7 +104,10 @@ export const BUILT_IN_STROKES: StrokeConfig[] = [
   },
   {
     name: 'Pendant',
-    path: `M 0 0 L 0 \${len ?? 14}`,
+    spline: {
+      start: [0, 0],
+      steps: [{ to: [0, 1] }],
+    },
     w: 1.8,
     color: '#3d8466',
     symmetry: 'none',
@@ -92,11 +116,9 @@ export const BUILT_IN_STROKES: StrokeConfig[] = [
   },
 ];
 
-// ---------------------------------------------------------------------------
-// localStorage helpers
-// ---------------------------------------------------------------------------
+// ─── localStorage helpers ────────────────────────────────────────────────────
 
-const STORAGE_KEY = 'bb-motif-studio-strokes';
+const STORAGE_KEY = 'bb-motif-studio-strokes-v2';
 
 export function loadStrokes(): StrokeConfig[] {
   if (typeof window === 'undefined') return [...BUILT_IN_STROKES];
@@ -111,10 +133,8 @@ export function loadStrokes(): StrokeConfig[] {
 
 export function saveStroke(config: StrokeConfig): void {
   if (typeof window === 'undefined') return;
-  if (config.builtIn) return; // never overwrite built-ins
-  const user = BUILT_IN_STROKES.length === 0
-    ? []
-    : loadStrokes().filter(s => !s.builtIn);
+  if (config.builtIn) return;
+  const user = loadStrokes().filter(s => !s.builtIn);
   const existing = user.findIndex(s => s.name === config.name);
   if (existing >= 0) {
     user[existing] = { ...config, builtIn: false };
@@ -124,95 +144,84 @@ export function saveStroke(config: StrokeConfig): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
 }
 
-export function deleteStroke(name: MotifKind): void {
+export function deleteStroke(name: string): void {
   if (typeof window === 'undefined') return;
-  const isBuiltIn = BUILT_IN_STROKES.some(s => s.name === name);
-  if (isBuiltIn) return;
-  const user = loadStrokes()
-    .filter(s => !s.builtIn && s.name !== name);
+  if (BUILT_IN_STROKES.some(s => s.name === name)) return;
+  const user = loadStrokes().filter(s => !s.builtIn && s.name !== name);
   localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
 }
 
-export function loadUserStrokes(): StrokeConfig[] {
-  return loadStrokes().filter(s => !s.builtIn);
+// ─── Code generation — produces TypeScript with spline() builder ─────────────
+
+function fmtPt(p: [number, number]): string {
+  return `[${p[0]}, ${p[1]}]`;
 }
 
-// ---------------------------------------------------------------------------
-// Code generation — produces TypeScript pasteable into motifs.tsx
-// ---------------------------------------------------------------------------
+function fmtStep(step: NormalizedStep, indent: string): string {
+  if ('c1' in step) {
+    return `${indent}{ to: [s*${step.to[0]}, s*${step.to[1]}], c1: [s*${step.c1[0]}, s*${step.c1[1]}], c2: [s*${step.c2[0]}, s*${step.c2[1]}] },`;
+  }
+  if ('q' in step) {
+    return `${indent}{ to: [s*${step.to[0]}, s*${step.to[1]}], q: [s*${step.q[0]}, s*${step.q[1]}] },`;
+  }
+  return `${indent}{ to: [s*${step.to[0]}, s*${step.to[1]}] },`;
+}
 
 export function generateCode(config: StrokeConfig, s = 80): string {
-  const { name, path, w, color, symmetry, mode, extras } = config;
-  const camelName = name.replace(/([A-Z])/g, '_$1').replace(/^/, '');
+  const { name, spline, w, color, symmetry, mode, extras } = config;
+  const Primitive = mode === 'fill' ? 'IronFill' : 'IronStroke';
+  const symOpen = symmetry !== 'none' ? `<${symmetry}>` : '';
+  const symClose = symmetry !== 'none' ? `</${symmetry}>` : '';
 
-  let extraCode = '';
-  if (extras && typeof extras === 'function') {
-    const extra = extras({ s });
-    if (extra && extra.path) {
-      const extraSym = symmetry === 'none' ? '' : `      <${symmetry}>`;
-      const extraSymClose = symmetry === 'none' ? '' : `</${symmetry}>`;
-      extraCode = `
-      ${extraSym}
-        <IronStroke d={${extra.path.replace(/\${s/g, '${s')}} w={${extra.w}} color={IRON.bright} />
-      ${extraSymClose}`;
-    }
+  const stepsCode = spline.steps
+    .map(step => fmtStep(step, '      '))
+    .join('\n');
+
+  const mainStroke = mode === 'fill'
+    ? `<IronFill d={...} color="${color}" />`
+    : `<IronStroke stroke={spline(
+      [s*${spline.start[0]}, s*${spline.start[1]}],
+      [
+${stepsCode}
+      ],
+      { w: ${w}, color: '${color}' },
+    )} />`;
+
+  let extrasCode = '';
+  if (extras) {
+    const eSteps = extras.spline.steps
+      .map(step => fmtStep(step, '        '))
+      .join('\n');
+    extrasCode = `
+      ${symOpen ? `${symOpen}\n        ` : ''}<IronStroke stroke={spline(
+        [s*${extras.spline.start[0]}, s*${extras.spline.start[1]}],
+        [
+${eSteps}
+        ],
+        { w: ${extras.w ?? w}, color: '${extras.color ?? color}' },
+      )} />${symClose ? `\n      ${symClose}` : ''}`;
   }
 
-  const symOpen = symmetry === 'none' ? '' : `    <${symmetry}>`;
-  const symClose = symmetry === 'none' ? '' : `</${symmetry}>`;
-  const Primitive = mode === 'fill' ? 'IronFill' : 'IronStroke';
-
-  // Unescape template literal back-ticks for the generated code
-  const escapedPath = path.replace(/\\`/g, '`');
-
   return `export function ${name}({ s = ${s}, w = ${w} }: { s?: number; w?: number }) {
-  const pathD = \`${escapedPath}\`;
   return (
     <g>
-${symOpen}
-        <${Primitive} d={pathD} w={w} color={IRON.mid} />
-${extraCode}
-${symClose}
+      ${symOpen}
+        ${mainStroke}
+      ${symClose}${extrasCode}
     </g>
   );
 }`;
 }
 
-// ---------------------------------------------------------------------------
-// Parse TypeScript code → StrokeConfig (best-effort)
-// ---------------------------------------------------------------------------
+// ─── Parse JSON → StrokeConfig ───────────────────────────────────────────────
 
-export function parseCode(code: string): Partial<StrokeConfig> | null {
+export function parseJson(json: string): Partial<StrokeConfig> | null {
   try {
-    // Extract d={`...`} — use a multi-line-capable approach without the 's' flag
-    const dMatch = code.match(/d=\{`([^`]+)`\}/);
-    const path = dMatch ? dMatch[1].trim() : '';
-
-    // Extract w={number} or w={number}
-    const wMatch = code.match(/w[=\s]*\{?(\d+\.?\d*)/);
-    const w = wMatch ? parseFloat(wMatch[1]) : 2.5;
-
-    // Detect symmetry wrapper
-    const hasMirrorH = /\bMirrorH\b/.test(code);
-    const hasMirrorV = /\bMirrorV\b/.test(code);
-    const hasMirror4 = /\bMirror4\b/.test(code);
-    const hasRotate2 = /\bRotate2\b/.test(code);
-    let symmetry: StrokeConfig['symmetry'] = 'none';
-    if (hasMirrorH) symmetry = 'MirrorH';
-    else if (hasMirrorV) symmetry = 'MirrorV';
-    else if (hasMirror4) symmetry = 'Mirror4';
-    else if (hasRotate2) symmetry = 'Rotate2';
-
-    // Detect mode
-    const mode: StrokeConfig['mode'] = /\bIronFill\b/.test(code) ? 'fill' : 'stroke';
-
-    // Extract name from "export function Name"
-    const nameMatch = code.match(/export\s+function\s+(\w+)/);
-    const name = nameMatch ? nameMatch[1] : 'CustomMotif';
-
-    if (!path) return null;
-
-    return { name, path, w, symmetry, mode, color: '#3d8466' };
+    const obj = JSON.parse(json);
+    if (obj && obj.spline && obj.spline.start && obj.spline.steps) {
+      return obj as Partial<StrokeConfig>;
+    }
+    return null;
   } catch {
     return null;
   }

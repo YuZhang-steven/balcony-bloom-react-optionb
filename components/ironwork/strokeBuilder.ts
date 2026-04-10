@@ -5,10 +5,11 @@
  * Use these at call sites instead of constructing models by hand.
  *
  * Builder hierarchy (simple → complex):
- *   line()      — two-point straight segment
- *   polyline()  — multi-point connected line segments
- *   curve()     — single cubic bezier
- *   svgPath()   — parse arbitrary SVG path string into a model
+ *   line()            — two-point straight segment
+ *   polyline()        — multi-point connected line segments
+ *   curve()           — single cubic bezier
+ *   spline()          — multi-segment path (line / quad / cubic steps)
+ *   fromNormalized()  — scale a NormalizedSpline by `s` into an IronStrokeModel
  */
 
 import type { IronStrokeModel, JoinStyle, StrokeNode, StrokeSegment, StrokePaint } from './strokeTypes';
@@ -203,147 +204,44 @@ export function spline(start: Pt, steps: SplineStep[], opts: StrokeOpts = {}): I
   };
 }
 
-// ─── svgPath ─────────────────────────────────────────────────────────────────
+// ─── fromNormalized ──────────────────────────────────────────────────────────
+
+import type { NormalizedSpline, NormalizedStep, Pt2 } from '../motif-studio/motifTypes';
+
+/** Scale a Pt2 (fractions of `s`) to pixel coordinates. */
+function scalePt(p: Pt2, s: number): Pt {
+  return [p[0] * s, p[1] * s];
+}
+
+/** Scale a NormalizedStep by `s`. */
+function scaleStep(step: NormalizedStep, s: number): SplineStep {
+  if ('c1' in step) {
+    return { to: scalePt(step.to, s), c1: scalePt(step.c1, s), c2: scalePt(step.c2, s) };
+  }
+  if ('q' in step) {
+    return { to: scalePt(step.to, s), q: scalePt(step.q, s) };
+  }
+  return { to: scalePt(step.to, s) };
+}
 
 /**
- * Parse an SVG path string into an IronStrokeModel.
+ * Build an IronStrokeModel from a NormalizedSpline at a given size `s`.
  *
- * Handles M/m, L/l, Q/q, C/c, Z/z commands.
- * Quadratics are subdivided into short line segments for the ribbon compiler.
- * This is the bridge from existing raw-path code to the new model layer.
+ * This is the primary bridge between the Motif Studio's parametric data
+ * and the rendering pipeline. All coordinates in the spline are fractions of `s`.
+ *
+ * Usage:
+ *   const model = fromNormalized(config.spline, s, { w: config.w, color: config.color });
+ *   <IronStroke stroke={model} />
  */
-export function svgPath(d: string, opts: StrokeOpts = {}): IronStrokeModel {
-  const w = opts.w ?? DEFAULT_W;
-  const nodes: StrokeNode[] = [];
-  const segments: StrokeSegment[] = [];
-  let idCounter = 0;
-
-  const tokens = d.trim().match(/[MLQTCZAmlqtcza][^MLQTCZAmlqtcza]*/g) ?? [];
-
-  let curX = 0, curY = 0;
-  let startX = 0, startY = 0;
-  const SUBDIV = 6;
-
-  for (const token of tokens) {
-    const cmd = token[0];
-    const nums = token.slice(1).trim()
-      .split(/[\s,]+/)
-      .filter(Boolean)
-      .map(Number);
-
-    switch (cmd) {
-      case 'M': {
-        curX = nums[0] ?? curX; curY = nums[1] ?? curY;
-        startX = curX; startY = curY;
-        const id = `n${idCounter++}`;
-        nodes.push({ id, x: curX, y: curY, width: w });
-        break;
-      }
-      case 'm': {
-        curX += nums[0] ?? 0; curY += nums[1] ?? 0;
-        startX = curX; startY = curY;
-        const id = `n${idCounter++}`;
-        nodes.push({ id, x: curX, y: curY, width: w });
-        break;
-      }
-      case 'L': {
-        const nx = nums[0] ?? curX, ny = nums[1] ?? curY;
-        const fromId = nodes[nodes.length - 1]?.id ?? `n${idCounter - 1}`;
-        const toId = `n${idCounter++}`;
-        nodes.push({ id: toId, x: nx, y: ny, width: w });
-        segments.push({ from: fromId, to: toId, kind: 'line' });
-        curX = nx; curY = ny;
-        break;
-      }
-      case 'l': {
-        const nx = curX + (nums[0] ?? 0), ny = curY + (nums[1] ?? 0);
-        const fromId = nodes[nodes.length - 1]?.id ?? `n${idCounter - 1}`;
-        const toId = `n${idCounter++}`;
-        nodes.push({ id: toId, x: nx, y: ny, width: w });
-        segments.push({ from: fromId, to: toId, kind: 'line' });
-        curX = nx; curY = ny;
-        break;
-      }
-      case 'Q': {
-        const cx = nums[0] ?? curX, cy = nums[1] ?? curY;
-        const ex = nums[2] ?? curX, ey = nums[3] ?? curY;
-        const fromId = nodes[nodes.length - 1]?.id ?? `n${idCounter - 1}`;
-        for (let i = 1; i <= SUBDIV; i++) {
-          const t = i / SUBDIV;
-          const mt = 1 - t;
-          const bx = mt * mt * curX + 2 * mt * t * cx + t * t * ex;
-          const by = mt * mt * curY + 2 * mt * t * cy + t * t * ey;
-          const toId = `n${idCounter++}`;
-          if (i === 1) nodes.push({ id: fromId, x: curX, y: curY, width: w });
-          nodes.push({ id: toId, x: bx, y: by, width: w });
-          segments.push({ from: i === 1 ? fromId : `n${idCounter - 2}`, to: toId, kind: 'line' });
-        }
-        curX = ex; curY = ey;
-        break;
-      }
-      case 'q': {
-        const cx = curX + (nums[0] ?? 0), cy = curY + (nums[1] ?? 0);
-        const ex = curX + (nums[2] ?? 0), ey = curY + (nums[3] ?? 0);
-        const fromId = nodes[nodes.length - 1]?.id ?? `n${idCounter - 1}`;
-        for (let i = 1; i <= SUBDIV; i++) {
-          const t = i / SUBDIV;
-          const mt = 1 - t;
-          const bx = mt * mt * curX + 2 * mt * t * cx + t * t * ex;
-          const by = mt * mt * curY + 2 * mt * t * cy + t * t * ey;
-          const toId = `n${idCounter++}`;
-          if (i === 1) nodes.push({ id: fromId, x: curX, y: curY, width: w });
-          nodes.push({ id: toId, x: bx, y: by, width: w });
-          segments.push({ from: i === 1 ? fromId : `n${idCounter - 2}`, to: toId, kind: 'line' });
-        }
-        curX = ex; curY = ey;
-        break;
-      }
-      case 'C': {
-        const c1x = nums[0] ?? curX, c1y = nums[1] ?? curY;
-        const c2x = nums[2] ?? curX, c2y = nums[3] ?? curY;
-        const ex  = nums[4] ?? curX, ey  = nums[5] ?? curY;
-        const fromId = nodes[nodes.length - 1]?.id ?? `n${idCounter - 1}`;
-        const toId = `n${idCounter++}`;
-        nodes.push({ id: fromId, x: curX, y: curY, out: { x: c1x, y: c1y }, width: w });
-        nodes.push({ id: toId,   x: ex,   y: ey,   in:  { x: c2x, y: c2y }, width: w });
-        segments.push({ from: fromId, to: toId, kind: 'cubic' });
-        curX = ex; curY = ey;
-        break;
-      }
-      case 'c': {
-        const c1x = curX + (nums[0] ?? 0), c1y = curY + (nums[1] ?? 0);
-        const c2x = curX + (nums[2] ?? 0), c2y = curY + (nums[3] ?? 0);
-        const ex  = curX + (nums[4] ?? 0), ey  = curY + (nums[5] ?? 0);
-        const fromId = nodes[nodes.length - 1]?.id ?? `n${idCounter - 1}`;
-        const toId = `n${idCounter++}`;
-        nodes.push({ id: fromId, x: curX, y: curY, out: { x: c1x, y: c1y }, width: w });
-        nodes.push({ id: toId,   x: ex,   y: ey,   in:  { x: c2x, y: c2y }, width: w });
-        segments.push({ from: fromId, to: toId, kind: 'cubic' });
-        curX = ex; curY = ey;
-        break;
-      }
-      case 'Z':
-      case 'z': {
-        const firstId = nodes[0]?.id;
-        const lastId  = nodes[nodes.length - 1]?.id;
-        if (firstId && lastId && firstId !== lastId) {
-          segments.push({ from: lastId, to: firstId, kind: 'line' });
-        }
-        curX = startX; curY = startY;
-        break;
-      }
-      default:
-        break;
-    }
-  }
-
-  return {
-    id: opts.id ?? uid('sp'),
-    nodes,
-    segments,
-    paint: paint(opts.color),
-    cap: opts.cap ?? 'round',
-    defaultJoin: opts.join ?? 'round',
-    closed: opts.closed,
-  };
+export function fromNormalized(
+  ns: NormalizedSpline,
+  s: number,
+  opts: StrokeOpts = {},
+): IronStrokeModel {
+  return spline(
+    scalePt(ns.start, s),
+    ns.steps.map(step => scaleStep(step, s)),
+    opts,
+  );
 }
