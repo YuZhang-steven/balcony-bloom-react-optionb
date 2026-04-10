@@ -1,5 +1,6 @@
 import { IronStroke, IronFill } from '../ironwork/IronStroke';
 import { Finial } from '../ironwork/ornaments';
+import { line, polyline } from '../ironwork/strokeBuilder';
 import { cScroll, twistBar } from '../ironwork/primitives';
 import { IRON, STONE } from '../game/palettes';
 import { useRegisterAnchors } from '../game/AnchorContext';
@@ -95,15 +96,12 @@ type StairRailingProps = {
 function StairRailing({ points, side, railH }: StairRailingProps) {
   const n = points.length;
   const newel = points[n - 1];
-  const top = points[0];
   const dir = side === 'left' ? -1 : 1;
 
-  const topY = top.y - railH * 0.6;
-  const newelTopY = newel.y - railH * 0.62;
-  let rail = `M ${top.x} ${topY}`;
-  for (let i = 1; i < n; i++) {
+  const railPts: [number, number][] = [];
+  for (let i = 0; i < n; i++) {
     const p = points[i];
-    rail += ` L ${p.x} ${p.y - railH * 0.6 - (i === n - 1 ? 2 : 0)}`;
+    railPts.push([p.x, p.y - railH * 0.6 - (i === n - 1 ? 2 : 0)]);
   }
 
   const scrollSpots = [];
@@ -114,13 +112,13 @@ function StairRailing({ points, side, railH }: StairRailingProps) {
 
   return (
     <g className={`stair-rail-${side}`}>
-      <IronStroke d={rail} w={5} color={IRON.deep} />
+      <IronStroke stroke={polyline(railPts, { w: 5, color: IRON.deep })} />
 
       {points.slice(0, n - 1).map((p, i) => {
-        const { main, ticks } = twistBar(p.x, p.y - railH * 0.6 + 3, p.y);
+        const { stroke, ticks } = twistBar(p.x, p.y - railH * 0.6 + 3, p.y, { w: 2.6 });
         return (
           <g key={i}>
-            <IronStroke d={main} w={2.6} />
+            <IronStroke stroke={stroke} />
             <path d={ticks} stroke={IRON.line} strokeWidth={1.1}
               opacity={0.48} fill="none" strokeLinecap="round" />
           </g>
@@ -129,9 +127,9 @@ function StairRailing({ points, side, railH }: StairRailingProps) {
 
       {scrollSpots.map((s, i) => (
         <g key={i}>
-          <IronStroke d={cScroll(s.x, s.y - railH * 0.08, 11, dir, 1.2)} w={2.2} color={IRON.bright} />
-          <IronStroke d={cScroll(s.x, s.y + railH * 0.08, 11, -dir, 1.2)} w={2.2} color={IRON.bright} />
-          <IronStroke d={`M ${s.x} ${s.y - railH * 0.08} L ${s.x} ${s.y + railH * 0.08}`} w={1.8} />
+          <IronStroke stroke={cScroll(s.x, s.y - railH * 0.08, 11, dir, 1.2, { w: 2.2, color: IRON.bright })} />
+          <IronStroke stroke={cScroll(s.x, s.y + railH * 0.08, 11, -dir, 1.2, { w: 2.2, color: IRON.bright })} />
+          <IronStroke stroke={line([s.x, s.y - railH * 0.08], [s.x, s.y + railH * 0.08], { w: 1.8 })} />
         </g>
       ))}
 
@@ -162,10 +160,10 @@ function DrumNewel({ x, y, h, dir }: DrumNewelProps) {
 
       {[-0.7, -0.35, 0, 0.35, 0.7].map((t, i) => {
         const bx = x + t * rx * 1.4;
-        const { main, ticks } = twistBar(bx, topY + 4, y - 2);
+        const { stroke, ticks } = twistBar(bx, topY + 4, y - 2, { w: i === 2 ? 3.8 : 2.6, color: i === 2 ? IRON.deep : IRON.mid });
         return (
           <g key={i}>
-            <IronStroke d={main} w={i === 2 ? 3.8 : 2.6} color={i === 2 ? IRON.deep : IRON.mid} />
+            <IronStroke stroke={stroke} />
             <path d={ticks} stroke={IRON.line} strokeWidth={1} opacity={0.42} fill="none" />
           </g>
         );

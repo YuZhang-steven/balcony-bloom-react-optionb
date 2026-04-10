@@ -1,63 +1,105 @@
 /**
- * Ironwork primitives — SVG components for rendering wrought-iron decorative elements.
+ * IronStroke — Authoring Model → Compiler → Renderer
  *
- * IronStroke renders a thick outlined stroke by layering two SVG <path> elements:
- *   1. A wider, semi-transparent path (IRON.line) acts as a dark border/cast-shadow.
- *   2. A narrower, fully-opaque path sits on top in the requested color.
- * Together this simulates a round iron bar with depth, as used on balconies and pilasters.
+ * The top-level renderer component for wrought-iron bar strokes.
+ * Accepts an IronStrokeModel and compiles it through the pipeline:
  *
- * IronFill is a plain filled path — suitable for flat iron shapes like finials and rosette centers.
+ *   Layer 1 — Authoring Model  (IronStrokeModel from strokeTypes.ts)
+ *   Layer 2 — Compiler         (strokeCompiler.ts: normalize → sample → ribbon → paths)
+ *   Layer 3 — Renderer         (this file: SVG layers)
  *
- * Ornamental end-pieces (Finial, Rosette) are exported from the sibling ornaments.tsx file.
+ * ─────────────────────────────────────────────────────────────────────────────
+ * API
+ *
+ *   <IronStroke stroke={model} />
+ *   <IronStroke stroke={model} debug />
+ *
+ * Build models with the helpers from strokeBuilder.ts:
+ *   import { line, polyline, spline, curve } from './strokeBuilder';
+ *
+ *   <IronStroke stroke={line([0, 0], [100, 50], { w: 4, color: IRON.deep })} />
+ *   <IronStroke stroke={spline([0, 0], [{ to: [100, 50], q: [50, 0] }], { w: 3 })} />
+ *
+ * ─────────────────────────────────────────────────────────────────────────────
+ * Render layers (bottom → top):
+ *
+ *   1. Silhouette  — wide dark outline (cast-iron edge / shadow border)
+ *   2. Face        — narrower metal face (full opacity, user color)
+ *   3. Seam        — optional thin highlight line along the centre spine
+ *   4. Debug       — control polygon + handle lines + node dots (when debug=true)
  */
+
+import { useMemo } from 'react';
 
 import { IRON } from '../game/palettes';
+import { compileStroke } from './strokeCompiler';
+import type { IronStrokeModel, CompiledStroke } from './strokeTypes';
 
-export type IronStrokeProps = {
-  d: string;      // SVG path data (M/L/Q/C commands)
-  w?: number;     // Core stroke width in px (default 3)
-  color?: string; // Stroke color key from IRON palette (default IRON.mid)
+// ─── IronFill — flat fill primitive ──────────────────────────────────────────
+
+export type IronFillProps = {
+  d: string;
+  color?: string;
+};
+
+/** Plain filled path for flat iron shapes (finials, rosette cores, etc.). */
+export function IronFill({ d, color = IRON.mid }: IronFillProps) {
+  return <path d={d} fill={color} />;
 }
 
+// ─── IronStroke ──────────────────────────────────────────────────────────────
+
+export type IronStrokeProps = {
+  stroke: IronStrokeModel;
+  debug?: boolean;
+};
+
 /**
- * Renders a round iron bar stroke with a subtle raised/beveled appearance.
- * The outer path simulates a cast-iron edge; the inner path provides the face color.
+ * Renders an iron bar stroke as layered SVG paths.
+ *
+ *   <IronStroke stroke={model} />
+ *   <IronStroke stroke={model} debug />
  */
-export function IronStroke({ d, w = 3, color = IRON.mid }: IronStrokeProps) {
+export function IronStroke({ stroke, debug = false }: IronStrokeProps) {
+  const compiled: CompiledStroke = useMemo(
+    () => compileStroke(stroke, debug),
+    [stroke, debug],
+  );
+
+  const { silhouette, face, seam, debug: debugOverlay } = compiled;
+  const faceColor = stroke.paint.kind === 'solid' ? stroke.paint.color : undefined;
+
   return (
     <>
-      {/* Outer "shadow" stroke — slightly wider, semi-transparent, darker color */}
-      <path
-        d={d}
-        fill="none"
-        stroke={IRON.line}
-        strokeWidth={w + 1.6}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        opacity={0.78}
-      />
-      {/* Inner "face" stroke — nominal width, full color */}
-      <path
-        d={d}
-        fill="none"
-        stroke={color}
-        strokeWidth={w}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+      {/* Layer 1 — outer silhouette: wide semi-transparent dark edge */}
+      <path d={silhouette} fill={IRON.line} opacity={0.78} />
+
+      {/* Layer 2 — metal face */}
+      <path d={face} fill={faceColor} opacity={1} />
+
+      {/* Layer 3 — centre seam highlight */}
+      {seam && (
+        <path
+          d={seam}
+          fill="none"
+          stroke={IRON.bright}
+          strokeWidth={0.8}
+          strokeLinecap="round"
+          opacity={0.55}
+        />
+      )}
+
+      {/* Layer 4 — debug overlay */}
+      {debug && debugOverlay && (
+        <path
+          d={debugOverlay}
+          fill="none"
+          stroke="#ff6b6b"
+          strokeWidth={0.6}
+          strokeDasharray="3 2"
+          opacity={0.85}
+        />
+      )}
     </>
   );
 }
-
-export type IronFillProps = {
-  d: string;      // SVG path data
-  color?: string; // Fill color (default IRON.mid)
-}
-
-/** Plain filled path for flat iron shapes (centers, finial blades, rosette cores). */
-export function IronFill({ d, color = IRON.mid }: IronFillProps) {
-  return (
-    <path d={d} fill={color} />
-  );
-}
-

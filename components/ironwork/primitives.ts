@@ -1,69 +1,147 @@
-export function cScroll(cx: number, cy: number, r: number, dir = 1, turns = 1.35): string {
+/**
+ * Iron Primitives — parametric ironwork shape generators.
+ *
+ * Each function produces structured data compatible with the stroke builder layer.
+ * Stroke-based shapes return IronStrokeModel directly.
+ * Fill-based shapes (acanthus, bladeLeaf) return raw SVG path strings for IronFill.
+ *
+ * Tick marks (twistBar) are decorative hatching and remain raw SVG strings
+ * since they render as plain <path> elements, not through the IronStroke pipeline.
+ */
+
+import type { IronStrokeModel } from './strokeTypes';
+import type { StrokeOpts } from './strokeBuilder';
+import { polyline, spline, line } from './strokeBuilder';
+
+type Pt = [number, number];
+
+// ─── cScroll ─────────────────────────────────────────────────────────────────
+
+/**
+ * C-shaped spiral scroll, sampled as a polyline.
+ * Returns an IronStrokeModel ready for <IronStroke stroke={...} />.
+ */
+export function cScroll(
+  cx: number,
+  cy: number,
+  r: number,
+  dir = 1,
+  turns = 1.35,
+  opts: StrokeOpts = {},
+): IronStrokeModel {
   const steps = 36;
-  let d = '';
+  const pts: Pt[] = [];
   for (let i = 0; i <= steps; i++) {
     const t = i / steps;
     const a = dir * t * turns * Math.PI * 2;
     const rr = r * (1 - 0.62 * t);
-    const x = cx + Math.cos(a) * rr;
-    const y = cy + Math.sin(a) * rr;
-    d += (i === 0 ? 'M' : 'L') + ` ${x.toFixed(2)} ${y.toFixed(2)}`;
+    pts.push([cx + Math.cos(a) * rr, cy + Math.sin(a) * rr]);
   }
-  return d;
+  return polyline(pts, opts);
 }
 
-export function sScroll(x: number, y: number, w: number, h: number): string[] {
+// ─── greekKey ────────────────────────────────────────────────────────────────
+
+/**
+ * Greek key / meander pattern as a polyline.
+ * Returns an IronStrokeModel.
+ */
+export function greekKey(
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  opts: StrokeOpts = {},
+): IronStrokeModel {
+  const unit = h * 1.4;
+  const pts: Pt[] = [[x, y + h]];
+  let px = x;
+  while (px < x + w - unit) {
+    pts.push(
+      [px, y],
+      [px + unit * 0.5, y],
+      [px + unit * 0.5, y + h * 0.55],
+      [px + unit * 0.25, y + h * 0.55],
+      [px + unit * 0.25, y + h * 0.3],
+      [px + unit * 0.75, y + h * 0.3],
+      [px + unit * 0.75, y + h],
+      [px + unit, y + h],
+    );
+    px += unit;
+  }
+  pts.push([x + w, y + h]);
+  return polyline(pts, opts);
+}
+
+// ─── twistBar ────────────────────────────────────────────────────────────────
+
+/**
+ * Vertical twisted bar: the main stroke is an IronStrokeModel (simple line),
+ * the diagonal tick marks are a raw SVG path string for plain <path> rendering.
+ */
+export function twistBar(
+  x: number,
+  y1: number,
+  y2: number,
+  opts: StrokeOpts = {},
+): { stroke: IronStrokeModel; ticks: string } {
+  const stroke = line([x, y1], [x, y2], opts);
+  const tickParts: string[] = [];
+  const seg = 11;
+  const n = Math.floor((y2 - y1) / seg);
+  for (let i = 1; i < n; i++) {
+    const ty = y1 + i * seg;
+    tickParts.push(`M ${x - 2.4} ${ty - 1.7} L ${x + 2.4} ${ty + 1.7}`);
+  }
+  return { stroke, ticks: tickParts.join(' ') };
+}
+
+// ─── sScroll ─────────────────────────────────────────────────────────────────
+
+/**
+ * S-shaped scroll: spine + top spiral + bottom spiral.
+ * Returns three IronStrokeModels.
+ */
+export function sScroll(
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  opts: StrokeOpts = {},
+): { spine: IronStrokeModel; top: IronStrokeModel; bottom: IronStrokeModel } {
   const r = Math.min(w, h) * 0.26;
   const tx = x + w * 0.25, ty = y + r * 0.9;
   const bx = x + w * 0.75, by = y + h - r * 0.9;
-  const spine = `M ${tx - r} ${ty} C ${tx - r * 1.2} ${ty + h * 0.35}, ${bx + r * 1.2} ${by - h * 0.35}, ${bx + r} ${by}`;
-  let top = `M ${tx - r} ${ty}`;
+
+  // Spine is a single cubic
+  const spine = spline(
+    [tx - r, ty],
+    [{ to: [bx + r, by], c1: [tx - r * 1.2, ty + h * 0.35], c2: [bx + r * 1.2, by - h * 0.35] }],
+    opts,
+  );
+
+  // Top spiral
+  const topPts: Pt[] = [[tx - r, ty]];
   for (let i = 1; i <= 18; i++) {
     const t = i / 18, a = Math.PI + t * 1.4 * Math.PI * 2, rr = r * (1 - t * 0.78);
-    top += ` L ${(tx + Math.cos(a) * rr).toFixed(2)} ${(ty + Math.sin(a) * rr).toFixed(2)}`;
+    topPts.push([tx + Math.cos(a) * rr, ty + Math.sin(a) * rr]);
   }
-  let bot = `M ${bx + r} ${by}`;
+  const top = polyline(topPts, opts);
+
+  // Bottom spiral
+  const botPts: Pt[] = [[bx + r, by]];
   for (let i = 1; i <= 18; i++) {
     const t = i / 18, a = t * 1.4 * Math.PI * 2, rr = r * (1 - t * 0.78);
-    bot += ` L ${(bx + Math.cos(a) * rr).toFixed(2)} ${(by + Math.sin(a) * rr).toFixed(2)}`;
+    botPts.push([bx + Math.cos(a) * rr, by + Math.sin(a) * rr]);
   }
-  return [spine, top, bot];
+  const bottom = polyline(botPts, opts);
+
+  return { spine, top, bottom };
 }
 
-export function heart(cx: number, cy: number, s: number): string[] {
-  const left = `M ${cx} ${cy + s} Q ${cx - s * 0.9} ${cy + s * 0.3} ${cx - s * 0.7} ${cy - s * 0.3}
-    Q ${cx - s * 0.5} ${cy - s * 0.85} ${cx - s * 0.05} ${cy - s * 0.55}
-    Q ${cx + s * 0.25} ${cy - s * 0.35} ${cx} ${cy - s * 0.05}`;
-  const right = `M ${cx} ${cy + s} Q ${cx + s * 0.9} ${cy + s * 0.3} ${cx + s * 0.7} ${cy - s * 0.3}
-    Q ${cx + s * 0.5} ${cy - s * 0.85} ${cx + s * 0.05} ${cy - s * 0.55}
-    Q ${cx - s * 0.25} ${cy - s * 0.35} ${cx} ${cy - s * 0.05}`;
-  return [left, right];
-}
+// ─── Fill shapes (raw SVG strings for IronFill) ──────────────────────────────
 
-export function greekKey(x: number, y: number, w: number, h: number): string {
-  const unit = h * 1.4;
-  let d = `M ${x} ${y + h}`, px = x;
-  while (px < x + w - unit) {
-    d += ` L ${px} ${y} L ${px + unit * 0.5} ${y} L ${px + unit * 0.5} ${y + h * 0.55}
-           L ${px + unit * 0.25} ${y + h * 0.55} L ${px + unit * 0.25} ${y + h * 0.3}
-           L ${px + unit * 0.75} ${y + h * 0.3} L ${px + unit * 0.75} ${y + h}
-           L ${px + unit} ${y + h}`;
-    px += unit;
-  }
-  return d + ` L ${x + w} ${y + h}`;
-}
-
-export function twistBar(x: number, y1: number, y2: number): { main: string; ticks: string } {
-  const main = `M ${x} ${y1} L ${x} ${y2}`;
-  const ticks: string[] = [];
-  const seg = 11, n = Math.floor((y2 - y1) / seg);
-  for (let i = 1; i < n; i++) {
-    const ty = y1 + i * seg;
-    ticks.push(`M ${x - 2.4} ${ty - 1.7} L ${x + 2.4} ${ty + 1.7}`);
-  }
-  return { main, ticks: ticks.join(' ') };
-}
-
+/** Acanthus leaf — closed fill shape. Returns SVG path string for IronFill. */
 export function acanthus(len: number): string {
   return `M 0 0 Q ${len * 0.15} ${-len * 0.25} ${len * 0.35} ${-len * 0.18}
     Q ${len * 0.5} ${-len * 0.1} ${len * 0.55} ${-len * 0.28}
@@ -75,6 +153,7 @@ export function acanthus(len: number): string {
     Q ${len * 0.15} ${len * 0.25} 0 0 Z`;
 }
 
+/** Blade leaf — closed fill shape. Returns SVG path string for IronFill. */
 export function bladeLeaf(len: number, width: number): string {
   const w = width * 0.5;
   return `M 0 0

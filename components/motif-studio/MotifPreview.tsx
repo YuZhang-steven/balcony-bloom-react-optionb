@@ -8,9 +8,15 @@
  */
 
 import { IronStroke, IronFill } from '../ironwork/IronStroke';
+import { svgPath } from '../ironwork/strokeBuilder';
 import { MirrorH, Mirror4, MirrorV, Rotate2 } from '../ironwork/Symmetry';
 import { IRON } from '../game/palettes';
 import type { StrokeConfig, SymmetryMode } from './motifTypes';
+
+// NOTE: svgPath is used here as a bridge for the Motif Studio's user-editable
+// path strings (StrokeConfig.path). The studio allows users to author raw SVG
+// path data interactively, so string→model conversion is required at this layer.
+// All other ironwork code uses structured builders (line, spline, polyline, etc.).
 
 const VIEW_W = 1600;
 const VIEW_H = 780;
@@ -33,11 +39,11 @@ function SymmetryWrapper({
   children: React.ReactNode;
 }) {
   switch (mode) {
-    case 'MirrorH':  return <><MirrorH>{children}</MirrorH></>;
-    case 'MirrorV':  return <><MirrorV>{children}</MirrorV></>;
-    case 'Mirror4':  return <><Mirror4>{children}</Mirror4></>;
-    case 'Rotate2':  return <><Rotate2>{children}</Rotate2></>;
-    default:         return <>{children}</>;
+    case 'MirrorH': return <><MirrorH>{children}</MirrorH></>;
+    case 'MirrorV': return <><MirrorV>{children}</MirrorV></>;
+    case 'Mirror4': return <><Mirror4>{children}</Mirror4></>;
+    case 'Rotate2': return <><Rotate2>{children}</Rotate2></>;
+    default: return <>{children}</>;
   }
 }
 
@@ -55,7 +61,6 @@ function GridLines() {
         stroke="rgba(141,122,146,0.18)" strokeWidth={0.5} strokeDasharray="4 6" />
     );
   }
-  // Center crosshairs — slightly brighter
   lines.push(
     <line key="cx" x1={CX} y1={0} x2={CX} y2={VIEW_H} stroke="rgba(141,122,146,0.35)" strokeWidth={0.8} />,
     <line key="cy" x1={0} y1={CY} x2={VIEW_W} y2={CY} stroke="rgba(141,122,146,0.35)" strokeWidth={0.8} />
@@ -67,8 +72,6 @@ export function MotifPreview({ config, s, showGrid, evalPath }: MotifPreviewProp
   const { path, w, color, symmetry, mode, extras } = config;
   const d = evalPath(path);
 
-  const Primitive = mode === 'fill' ? IronFill : IronStroke;
-
   let extraEls: React.ReactNode = null;
   if (extras && typeof extras === 'function') {
     const extra = extras({ s });
@@ -76,18 +79,14 @@ export function MotifPreview({ config, s, showGrid, evalPath }: MotifPreviewProp
       extraEls = (
         <SymmetryWrapper mode={symmetry}>
           <IronStroke
-            d={evalPath(extra.path)}
-            w={extra.w ?? w}
-            color={extra.color ?? IRON.bright}
+            stroke={svgPath(evalPath(extra.path), { w: extra.w ?? w, color: extra.color ?? IRON.bright })}
           />
         </SymmetryWrapper>
       );
     }
   }
 
-  // Special handling for Pendant (uses len parameter, not s)
   const isPendant = config.name === 'Pendant';
-  const effectiveS = isPendant ? s * 0.175 : s;
 
   return (
     <div className="ms-preview-wrap">
@@ -96,10 +95,8 @@ export function MotifPreview({ config, s, showGrid, evalPath }: MotifPreviewProp
         className="ms-preview-svg"
         aria-label="Motif preview"
       >
-        {/* Parchment background */}
         <rect width={VIEW_W} height={VIEW_H} fill="var(--paper-warm)" />
 
-        {/* SVG Filters */}
         <defs>
           <filter id="ms-wobble" x="-5%" y="-5%" width="110%" height="110%">
             <feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="2" seed="3" result="t" />
@@ -107,23 +104,20 @@ export function MotifPreview({ config, s, showGrid, evalPath }: MotifPreviewProp
           </filter>
         </defs>
 
-        {/* Grid */}
         {showGrid && <GridLines />}
 
-        {/* Motif — centered at (CX, CY) */}
         <g transform={`translate(${CX} ${CY})`} filter="url(#ms-wobble)">
           <SymmetryWrapper mode={symmetry}>
             {mode === 'fill' ? (
               <IronFill d={d} color={color} />
             ) : (
-              <IronStroke d={d} w={w} color={color} />
+              <IronStroke stroke={svgPath(d, { w, color })} />
             )}
           </SymmetryWrapper>
 
           {extraEls}
         </g>
 
-        {/* Size label */}
         <text
           x={VIEW_W - 16}
           y={VIEW_H - 14}
